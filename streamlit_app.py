@@ -100,6 +100,11 @@ def page_geometry_optimisation():
     st.title("Geometry Optimisation")
     st.write("Set parameter ranges and run geometry optimisation.")
 
+    # Add cache clear button
+    if st.button("🧹 Clear cached optimisation results"):
+        st.cache_data.clear()
+        st.success("✅ Cache cleared. You can now re-run the optimisation.")
+
     if st.session_state.load_data and st.session_state.mat_props:
         with st.form("optimisation_form"):
             st.subheader("Geometry Ranges")
@@ -159,7 +164,7 @@ def page_geometry_optimisation():
 
             st.session_state.optimisation_results = df_results
             st.session_state.optimal_geometry = optimal
-            st.success("Optimisation completed.")
+            st.success("✅ Optimisation completed.")
 
 
 
