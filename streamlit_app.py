@@ -5,6 +5,21 @@ import numpy as np
 import importlib.util
 import matplotlib.pyplot as plt
 
+import datetime
+
+@st.cache_data
+def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
+    st.write("⏱️ Optimisation run at:", datetime.datetime.now())  # Optional debug
+    wf = WTF_Concept.WTF_Concept_Design()
+    wf.mat_props = mat_props
+    return wf.optimise_foundation_geometry(
+        LCs_wout_pf=nominal_df,
+        LCs_w_pf=factored_df,
+        **kwargs
+    )
+
+
+
 # Load the WTF_Concept module from the uploaded file
 spec = importlib.util.spec_from_file_location("WTF_Concept", "WTF_Concept.py")
 WTF_Concept = importlib.util.module_from_spec(spec)
@@ -105,7 +120,7 @@ def page_geometry_optimisation():
         st.cache_data.clear()
         st.success("✅ Cache cleared. You can now re-run the optimisation.")
 
-    if st.session_state.load_data and st.session_state.mat_props:
+    if st.session_state.get("load_data") and st.session_state.get("mat_props"):
         with st.form("optimisation_form"):
             st.subheader("Geometry Ranges")
             d1_min = st.number_input("Base Diameter Min (d1_min)", value=20.0)
@@ -138,16 +153,6 @@ def page_geometry_optimisation():
             submitted = st.form_submit_button("Run Optimisation")
 
         if submitted:
-            @st.cache_data
-            def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
-                wf = WTF_Concept.WTF_Concept_Design()
-                wf.mat_props = mat_props
-                return wf.optimise_foundation_geometry(
-                    LCs_wout_pf=nominal_df,
-                    LCs_w_pf=factored_df,
-                    **kwargs
-                )
-
             with st.spinner("Running optimisation..."):
                 optimal, df_results = run_optimisation_cached(
                     mat_props=st.session_state.mat_props,
@@ -165,7 +170,6 @@ def page_geometry_optimisation():
             st.session_state.optimisation_results = df_results
             st.session_state.optimal_geometry = optimal
             st.success("✅ Optimisation completed.")
-
 
 
 
