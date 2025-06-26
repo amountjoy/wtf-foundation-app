@@ -142,7 +142,7 @@ def page_geometry_optimisation():
             def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
                 wf = WTF_Concept.WTF_Concept_Design()
                 wf.mat_props = mat_props
-                return wf.optimise_foundation_geometry_parallel(
+                return wf.optimise_foundation_geometry(
                     LCs_wout_pf=nominal_df,
                     LCs_w_pf=factored_df,
                     **kwargs
@@ -165,6 +165,7 @@ def page_geometry_optimisation():
             st.session_state.optimisation_results = df_results
             st.session_state.optimal_geometry = optimal
             st.success("✅ Optimisation completed.")
+
 
 
 
