@@ -168,22 +168,26 @@ def page_geometry_optimisation():
 # Page 4: Results Visualisation
 def page_results_visualisation():
     st.title("Optimisation Results")
-    if (
-        st.session_state.optimisation_results is not None
-        and not st.session_state.optimisation_results.empty
-        and st.session_state.optimal_geometry is not None
-    ):
-        wf = WTF_Concept.WTF_Concept_Design()
-        df_results = st.session_state.optimisation_results
-        optimal = st.session_state.optimal_geometry
 
+    # Safely retrieve from session state
+    df_results = st.session_state.get("optimisation_results")
+    optimal = st.session_state.get("optimal_geometry")
+
+    # Debugging output (optional, can be removed later)
+    st.write("🔍 Debug: df_results is None?", df_results is None)
+    st.write("🔍 Debug: df_results is empty?", df_results.empty if df_results is not None else "N/A")
+    st.write("🔍 Debug: optimal_geometry is None?", optimal is None)
+
+    if df_results is not None and not df_results.empty and optimal is not None:
+        wf = WTF_Concept.WTF_Concept_Design()
         figs1 = wf.visualise_design_space(df_results, optimal)
         figs2 = wf.visualise_design_space_frontier(df_results, optimal)
 
         for fig in figs1 + figs2:
             st.pyplot(fig)
     else:
-        st.warning("No optimisation results available.")
+        st.warning("⚠️ No optimisation results available. Please run the optimisation first.")
+
 
 
 
