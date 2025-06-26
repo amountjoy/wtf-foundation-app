@@ -133,14 +133,21 @@ def page_geometry_optimisation():
             submitted = st.form_submit_button("Run Optimisation")
 
         if submitted:
-            wf = WTF_Concept.WTF_Concept_Design()
-            wf.mat_props = st.session_state.mat_props
+            @st.cache_data
+            def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
+                wf = WTF_Concept.WTF_Concept_Design()
+                wf.mat_props = mat_props
+                return wf.optimise_foundation_geometry_parallel(
+                    LCs_wout_pf=nominal_df,
+                    LCs_w_pf=factored_df,
+                    **kwargs
+                )
 
             with st.spinner("Running optimisation..."):
-                progress_bar = st.progress(0)
-                optimal, df_results = wf.optimise_foundation_geometry_parallel(
-                    LCs_wout_pf=st.session_state.load_data["nominal"],
-                    LCs_w_pf=st.session_state.load_data["factored"],
+                optimal, df_results = run_optimisation_cached(
+                    mat_props=st.session_state.mat_props,
+                    nominal_df=st.session_state.load_data["nominal"],
+                    factored_df=st.session_state.load_data["factored"],
                     d1_min=d1_min, d1_max=d1_max, d_1_steps=d_1_steps,
                     h1_min=h1_min, h1_max=h1_max, h_1_steps=h_1_steps,
                     h2_min=h2_min, h2_max=h2_max, h_2_steps=h_2_steps,
@@ -149,12 +156,11 @@ def page_geometry_optimisation():
                     h1_h2_thk_tol=h1_h2_thk_tol,
                     theta_min_deg=theta_min_deg, theta_max_deg=theta_max_deg
                 )
-                progress_bar.progress(100)
 
             st.session_state.optimisation_results = df_results
             st.session_state.optimal_geometry = optimal
-
             st.success("Optimisation completed.")
+
 
 
 
