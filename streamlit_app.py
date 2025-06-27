@@ -226,13 +226,13 @@ def page_interactive_adjustment():
         geom = st.session_state.selected_geometry
         with st.form("adjust_geometry"):
             d1 = st.slider("Base Diameter (d1)", min_value=5.0, max_value=50.0, value=float(geom["d1"]))
-            d2 = st.slider("Pedestal Diameter (d2)", min_value=5.0, max_value=15, value=float(geom["d2"]))
+            d2 = st.slider("Pedestal Diameter (d2)", min_value=5.0, max_value=15.0, value=float(geom["d2"]))
             h1 = st.slider("Base Thickness (h1)", min_value=0.5, max_value=5.0, value=float(geom["h1"]))
             h2 = st.slider("Haunch Height (h2)", min_value = 0.5, max_value=5.0, value=float(geom["h2"]))
-            h3 = st.slider("Pedestal Height (h3)", min_value=0.5, max_value=2, value=float(geom["h3"]))
-            h4 = st.slider("Height of Upstand Above FGL (h4)", min_value=2, max_value=30.0, value=float(geom["h4"]))
+            h3 = st.slider("Pedestal Height (h3)", min_value=0.5, max_value=2.0, value=float(geom["h3"]))
+            h4 = st.slider("Height of Upstand Above FGL (h4)", min_value=2.0, max_value=30.0, value=float(geom["h4"]))
             h5 = st.slider("Downstand Height (h5)", min_value=0.0, max_value=1.0, value=float(geom["h5"]))
-            b = st.slider("Downstand breadth (b)", min_value=0.0, max_value=15, value=float(geom["b"]))
+            b = st.slider("Downstand breadth (b)", min_value=0.0, max_value=15.0, value=float(geom["b"]))
             hwt = st.slider("Water Table Height (hwt)", min_value=0.0, max_value=30.0, value=float(geom["hwt"]))
             submitted = st.form_submit_button("Update Geometry")
 
