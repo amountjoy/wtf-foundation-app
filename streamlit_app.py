@@ -81,7 +81,7 @@ def page_load_upload():
 
     load_file_nominal = st.file_uploader("Nominal unfactored loading CSV", type="csv", key="nominal")
     load_file_factored = st.file_uploader("Factored loading CSV", type="csv", key="factored")
-    climate_multiplier = st.number_input("Climate Change Load Multiplier", value=1.05)
+    climate_multiplier = st.number_input("Climate Change Wind Speed Multiplier", value=1.05)
 
     if load_file_nominal and load_file_factored:
         wf = WTF_Concept.WTF_Concept_Design()
