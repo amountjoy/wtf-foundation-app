@@ -225,7 +225,7 @@ def page_interactive_adjustment():
     if st.session_state.selected_geometry is not None: # and isinstance(st.session_state.selected_geometry, dict):
         geom = st.session_state.selected_geometry
         with st.form("adjust_geometry"):
-            d1 = st.slider("Base Diameter (d1)", min_value=5.0, max_value=30.0, value=float(geom["d1"]))
+            d1 = st.slider("Base Diameter (d1)", min_value=5.0, max_value=50.0, value=float(geom["d1"]))
             d2 = st.slider("Pedestal Diameter (d2)", min_value=5.0, max_value=30.0, value=float(geom["d2"]))
             h1 = st.slider("Base Thickness (h1)", min_value=0.5, max_value=5.0, value=float(geom["h1"]))
             h2 = st.slider("Haunch Height (h2)", min_value = 0.5, max_value=5.0, value=float(geom["h2"]))
