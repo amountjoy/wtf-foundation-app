@@ -79,8 +79,8 @@ def page_load_upload():
     st.title("Load Case Upload")
     st.write("Upload two CSV files: one without partial factors and one with partial factors.")
 
-    load_file_nominal = st.file_uploader("Nominal Load Case CSV", type="csv", key="nominal")
-    load_file_factored = st.file_uploader("Factored Load Case CSV", type="csv", key="factored")
+    load_file_nominal = st.file_uploader("Nominal unfactored loading CSV", type="csv", key="nominal")
+    load_file_factored = st.file_uploader("Factored loading CSV", type="csv", key="factored")
     climate_multiplier = st.number_input("Climate Change Load Multiplier", value=1.05)
 
     if load_file_nominal and load_file_factored:
