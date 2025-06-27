@@ -11,7 +11,7 @@ import datetime
 st.set_page_config(
     page_title="WTF Concept Design",  # Title shown in the browser tab
     page_icon="🌀",                   # Optional: emoji or image
-    layout="wide",                   # Optional: 'centered' or 'wide'
+    layout="centered",                   # Optional: 'centered' or 'wide'
     initial_sidebar_state="expanded" # Optional: 'auto', 'expanded', 'collapsed'
 )
 
