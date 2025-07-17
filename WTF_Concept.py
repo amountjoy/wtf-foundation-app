@@ -54,9 +54,10 @@ class WTF_Concept_Design:
     value_widgets = {}
     mat_props = {}
     
-    def __init__(self):   
+    def __init__(self, submerged = True):   
         """Initialize the WTF_Concept_Design class."""
-        return
+        self.submerged = submerged
+        #return
     
     def vol_base_slab(self, d1, h1):
 
@@ -184,8 +185,11 @@ class WTF_Concept_Design:
         Returns:
         float: Total water volume.
         """
-
-        return (d1**2*np.pi/4)*hwt+vol_downstand
+        if self.submerged:
+            vol = (d1**2*np.pi/4)*hwt+vol_downstand
+        else:
+            vol = 0
+        return vol
     
     def plot_foundation(self, d1, d2, h1, h2, h3, h4, h5, b, hwt):
         """
@@ -243,9 +247,12 @@ class WTF_Concept_Design:
             h4 = h3
             warnings.append("Upstand height above FGL (h4) adjusted to be less than pedestal height (h3).")
     
-        if hwt >= h1 + h2 + h3 - h4:
-            hwt = h1 + h2 + h3 - h4
-            warnings.append("Height of ground water table (hwt) adjusted to be less than FGL (h1 + h2 + h3 - h4).")
+        if self.submerged:
+            if hwt > h1 + h2 + h3 - h4:
+                hwt = h1 + h2 + h3 - h4
+                warnings.append("Height of ground water table (hwt) adjusted to be less than FGL (h1 + h2 + h3 - h4).")
+        else:
+            hwt = 0
         
         if d2<0:
             d2 = 0.1
@@ -314,6 +321,7 @@ class WTF_Concept_Design:
     
         ax1.set_xlim(-d1, d1)
         ax1.set_ylim(- h5 - 4, h1 + h2 + h3 + h4 + 4)
+        #ax1.set_aspect('equal')
         ax1.legend(loc='upper right')
     
         # 3D View
@@ -366,6 +374,13 @@ class WTF_Concept_Design:
         ax2.set_xlim(-d1/2, d1/2)
         ax2.set_ylim(-d1/2, d1/2)
         ax2.set_zlim(-h1 - h5, h1 + h2 + h3 + h4)
+        #ax2.set_box_aspect([1, 1, 1])
+        
+        
+        # Set equal aspect ratio
+        #max_range = max(d1, d1, h1 + h2 + h3 + h4 + h5)
+        #ax2.set_box_aspect([d1, d1, h1 + h2 + h3 + h4 + h5]) #Equal scaling
+        
         ax2.set_xlabel("X (m)")
         ax2.set_ylabel("Y (m)")
         ax2.set_zlabel("Z (m)")
@@ -402,10 +417,12 @@ class WTF_Concept_Design:
         
         # Add legend with total volumes
         conc_total = sum(volumes[:4])
+        rebar_total = conc_total * self.mat_props["rebar"]
         fill_total = sum(volumes[4:])
         main_patch = plt.Rectangle((0, 0), 1, 1, color='grey', label=f'Concrete Volume Total: {conc_total:.2f} m³')
+        rebar_patch = plt.Rectangle((0, 0), 1, 1, color='white', label=f'Rebar Mass Total: {rebar_total:.2f} kg')
         fill_patch = plt.Rectangle((0, 0), 1, 1, color='brown', label=f'Fill Volume Total: {fill_total:.2f} m³')
-        plt.legend(handles=[main_patch, fill_patch])
+        plt.legend(handles=[main_patch, rebar_patch, fill_patch])
 
         
         plt.tight_layout()
@@ -421,7 +438,8 @@ class WTF_Concept_Design:
             'V_c': self.vol_conc(h1, h2, h3, h5, d1, d2, b),
             'V_h_f': self.vol_haunch_fill(d1, h2, self.vol_haunch(d1, d2, h2)),
             'V_p_f': self.vol_pedestal_fill(d1, d2, h3, h4),
-            'V_w': self.vol_water(d1, hwt, self.vol_downstand(b, h5))
+            'V_w': self.vol_water(d1, hwt, self.vol_downstand(b, h5)),
+            'Rebar_mass': self.vol_conc(h1, h2, h3, h5, d1, d2, b) * self.mat_props["rebar"]
         }
         
         return fig, plt.gcf()
@@ -491,7 +509,8 @@ class WTF_Concept_Design:
             {"name": "ø'", "value": 30.00, "unit": "degs", "description": "6N upfill / capping layer to gravity base"},
             {"name": "Allowable BP", "value": 250.00, "unit": "kPa", "description": "allow. peak edge bearing pressure; ref. Geotechnical Report"},
             {"name": "g conc.", "value": 24.50, "unit": "kN/m³", "description": "assumed density of RC WTG foundation"},
-            {"name": "g steel", "value": 77.00, "unit": "kN/m³", "description": "assumed density for embedded structural steel"}
+            {"name": "g steel", "value": 77.00, "unit": "kN/m³", "description": "assumed density for embedded structural steel"},
+            {"name": "rebar kg (per m3 conc)", "value": 150, "unit": "kg/m3", "description": "assumed mass of rebar per cubic metre of concrete"}
         ]
         
               
@@ -528,7 +547,8 @@ class WTF_Concept_Design:
             "phi_prime": self.value_widgets["ø'"].value,
             "allowable_bp": self.value_widgets["Allowable BP"].value,
             "g_concrete": self.value_widgets["g conc."].value,
-            "g_steel": self.value_widgets["g steel"].value
+            "g_steel": self.value_widgets["g steel"].value,
+            "rebar": self.value_widgets["rebar kg (per m3 conc)"].value
         }
         # Optional: print or log updates
         #print("Material properties updated:", self.mat_props)
@@ -731,7 +751,7 @@ class WTF_Concept_Design:
 
 
 
-
+    #DO NOT USE THIS - USE PARALLEL VERSION INSTEAD!
     def optimise_foundation_geometry(self, LCs_wout_pf, LCs_w_pf, d1_min=20, d1_max=40, d_1_steps=20,
                                       h1_min=0.1, h1_max=2.5, h_1_steps=20,
                                       h2_min=0.1, h2_max=2.5, h_2_steps=20,
@@ -842,7 +862,8 @@ class WTF_Concept_Design:
                                               h3_min=0.1, h3_max=1.0, h_3_steps=20,
                                               d2=7, b=7, h4=0.55, h5=0.15,
                                               h1_h2_thk_tol=0.75,
-                                              theta_min_deg=6, theta_max_deg=12):
+                                              theta_min_deg=6, theta_max_deg=12
+                                              ):
 
         # Generate parameter ranges
         d1_range = np.linspace(d1_min, d1_max, d_1_steps)
@@ -857,7 +878,10 @@ class WTF_Concept_Design:
         # Material properties
         phi = self.mat_props['phi_prime']
         g_concrete = self.mat_props['g_concrete']
-        g_ballast = self.mat_props['g_ballast_wet']
+        if self.submerged:
+            g_ballast = self.mat_props['g_ballast_wet']
+        else:
+            g_ballast = self.mat_props['g_ballast_dry']
         g_water = self.mat_props['g_water']
     
         # Predict minimum section thickness
@@ -881,7 +905,10 @@ class WTF_Concept_Design:
             if haunch_half_span == 0 or not (theta_min_rad <= np.tan(h2 / haunch_half_span) <= theta_max_rad):
                 return None
     
-            hwt = h1 + h2 + h3 - h4
+            if self.submerged:
+                hwt = h1 + h2 + h3 - h4
+            else:
+                hwt = 0
     
             V_c = self.vol_conc(h1, h2, h3, h5, d1, d2, b)
             V_bs = self.vol_base_slab(d1, h1)

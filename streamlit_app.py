@@ -19,7 +19,7 @@ st.set_page_config(
 @st.cache_data
 def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
     st.write("⏱️ Optimisation run at:", datetime.datetime.now())  # Optional debug
-    wf = WTF_Concept.WTF_Concept_Design()
+    wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
     wf.mat_props = mat_props
     return wf.optimise_foundation_geometry(
         LCs_wout_pf=nominal_df,
@@ -50,6 +50,12 @@ def page_material_properties():
 
     with st.form("material_form"):
         st.subheader("Geotechnical and Material Properties")
+        
+        st.session_state.submerged = st.checkbox(
+            "Is the foundation submerged?",
+            value=st.session_state.get("submerged", True)
+        )
+
 
         g_ballast_dry = st.number_input("Dry Bulk Density of Ballast (kN/m³)", value=18.0)
         g_ballast_wet = st.number_input("Saturated Bulk Density of Ballast (kN/m³)", value=20.0)
@@ -84,7 +90,8 @@ def page_load_upload():
     climate_multiplier = st.number_input("Climate Change Wind Speed Multiplier", value=1.05)
 
     if load_file_nominal and load_file_factored:
-        wf = WTF_Concept.WTF_Concept_Design()
+        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
+
 
         # Save uploaded files temporarily
         with open("nominal.csv", "wb") as f:
@@ -198,7 +205,7 @@ def page_results_visualisation():
     st.write("🔍 Debug: optimal_geometry is None?", optimal is None)
 
     if df_results is not None and not df_results.empty and optimal is not None:
-        wf = WTF_Concept.WTF_Concept_Design()
+        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
         figs1 = wf.visualise_design_space(df_results, optimal)
         figs2 = wf.visualise_design_space_frontier(df_results, optimal)
 
@@ -216,7 +223,7 @@ def page_geometry_display():
     if st.session_state.optimal_geometry is not None:
         best_geometry = st.session_state.optimal_geometry
         st.session_state.selected_geometry = best_geometry
-        wf = WTF_Concept.WTF_Concept_Design()
+        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
         fig1, fig2 = wf.plot_foundation(
             best_geometry["d1"], best_geometry["d2"], best_geometry["h1"],
             best_geometry["h2"], best_geometry["h3"], best_geometry["h4"],
@@ -257,7 +264,7 @@ def page_interactive_adjustment():
             geom["hwt"] = hwt
             st.session_state.selected_geometry = geom
 
-        wf = WTF_Concept.WTF_Concept_Design()
+        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
         fig1, fig2 = wf.plot_foundation(
             geom["d1"], geom["d2"], geom["h1"], geom["h2"], geom["h3"],
             geom["h4"], geom["h5"], geom["b"], geom["hwt"]
@@ -274,7 +281,7 @@ def page_verification_checks():
         loads_unf = st.session_state.load_data["nominal"]
         loads_fact = st.session_state.load_data["factored"]
         props = st.session_state.mat_props
-        wf = WTF_Concept.WTF_Concept_Design()
+        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
         wf.mat_props = props
 
         # Extract geometry parameters
