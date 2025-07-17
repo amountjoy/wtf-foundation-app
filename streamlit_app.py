@@ -268,6 +268,7 @@ def page_interactive_adjustment():
             st.session_state.selected_geometry = geom
 
         wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
+        wf.mat_props = st.session_state.mat_props
         fig1, fig2 = wf.plot_foundation(
             geom["d1"], geom["d2"], geom["h1"], geom["h2"], geom["h3"],
             geom["h4"], geom["h5"], geom["b"], geom["hwt"]
