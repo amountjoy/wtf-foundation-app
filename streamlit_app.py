@@ -226,6 +226,7 @@ def page_geometry_display():
         best_geometry = st.session_state.optimal_geometry
         st.session_state.selected_geometry = best_geometry
         wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
+        wf.mat_props = st.session_state.mat_props
         fig1, fig2 = wf.plot_foundation(
             best_geometry["d1"], best_geometry["d2"], best_geometry["h1"],
             best_geometry["h2"], best_geometry["h3"], best_geometry["h4"],
