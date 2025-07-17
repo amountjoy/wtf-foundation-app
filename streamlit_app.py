@@ -308,7 +308,11 @@ def page_verification_checks():
 
         # Compute loads
         Conc_DL = wf.foundation_perm_load(V_c, props["g_concrete"])
-        Ballast_Sub = wf.foundation_perm_load(V_h_f + V_p_f, props["g_ballast_wet"])
+        Ballast_Sub = wf.foundation_perm_load(
+            V_h_f + V_p_f,
+            props["g_ballast_wet"] if wf.submerged else props["g_ballast_dry"]
+        )
+
         Hydrostatic_Uplift = wf.foundation_perm_load(V_w, props["g_water"])
 
         # Calculate moments
