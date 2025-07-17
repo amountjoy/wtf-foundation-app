@@ -21,7 +21,7 @@ def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
     st.write("⏱️ Optimisation run at:", datetime.datetime.now())  # Optional debug
     wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
     wf.mat_props = mat_props
-    return wf.optimise_foundation_geometry(
+    return wf.optimise_foundation_geometry_parallel(
         LCs_wout_pf=nominal_df,
         LCs_w_pf=factored_df,
         **kwargs
@@ -64,6 +64,7 @@ def page_material_properties():
         allowable_bp = st.number_input("Allowable Bearing Pressure (kPa)", value=250.0)
         g_concrete = st.number_input("Density of Concrete (kN/m³)", value=24.5)
         g_steel = st.number_input("Density of Steel (kN/m³)", value=77.0)
+        rebar = st.number_input("Rebar Mass (kg/m³)", value=150.0)
 
         submitted = st.form_submit_button("Save Material Properties")
 
@@ -75,7 +76,8 @@ def page_material_properties():
                 "phi_prime": phi_prime,
                 "allowable_bp": allowable_bp,
                 "g_concrete": g_concrete,
-                "g_steel": g_steel
+                "g_steel": g_steel,
+                "rebar": rebar
             }
             st.success("Material properties saved.")
 
