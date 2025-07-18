@@ -240,7 +240,7 @@ def page_geometry_display():
 
 # Page 6: Interactive Adjustment
 def page_interactive_adjustment():
-    st.title("Adjust Geometry Dimensions")
+    st.title("Adjust Geometry")
     if st.session_state.selected_geometry is not None: # and isinstance(st.session_state.selected_geometry, dict):
         geom = st.session_state.selected_geometry
         with st.form("adjust_geometry"):
