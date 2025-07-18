@@ -241,40 +241,47 @@ def page_geometry_display():
 # Page 6: Interactive Adjustment
 def page_interactive_adjustment():
     st.title("Adjust Geometry Dimensions")
-    if st.session_state.selected_geometry is not None: # and isinstance(st.session_state.selected_geometry, dict):
+    if st.session_state.selected_geometry is not None:
         geom = st.session_state.selected_geometry
         with st.form("adjust_geometry"):
-            d1 = st.slider("Base Diameter (d1)", min_value=5.0, max_value=50.0, value=float(geom["d1"]))
-            d2 = st.slider("Pedestal Diameter (d2)", min_value=5.0, max_value=15.0, value=float(geom["d2"]))
-            h1 = st.slider("Base Thickness (h1)", min_value=0.5, max_value=5.0, value=float(geom["h1"]))
-            h2 = st.slider("Haunch Height (h2)", min_value = 0.5, max_value=5.0, value=float(geom["h2"]))
-            h3 = st.slider("Pedestal Height (h3)", min_value=0.5, max_value=2.0, value=float(geom["h3"]))
-            h4 = st.slider("Height of Upstand Above FGL (h4)", min_value=0.0, max_value=2.0, value=float(geom["h4"]))
-            h5 = st.slider("Downstand Height (h5)", min_value=0.0, max_value=1.0, value=float(geom["h5"]))
-            b = st.slider("Downstand breadth (b)", min_value=0.0, max_value=15.0, value=float(geom["b"]))
-            hwt = st.slider("Water Table Height (hwt)", min_value=0.0, max_value=30.0, value=float(geom["hwt"]))
+            st.subheader("Adjust Geometry Dimensions")
+
+            def dual_input(label, key, min_val, max_val, default):
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    slider_val = st.slider(f"{label} (slider)", min_value=min_val, max_value=max_val, value=default, key=f"{key}_slider")
+                with col2:
+                    number_val = st.number_input(f"{label} (input)", min_value=min_val, max_value=max_val, value=slider_val, key=f"{key}_input")
+                # Sync slider and number input
+                if number_val != slider_val:
+                    st.session_state[f"{key}_slider"] = number_val
+                return number_val
+
+            d1 = dual_input("Base Diameter (d1)", "d1", 5.0, 50.0, float(geom["d1"]))
+            d2 = dual_input("Pedestal Diameter (d2)", "d2", 5.0, 15.0, float(geom["d2"]))
+            h1 = dual_input("Base Thickness (h1)", "h1", 0.5, 5.0, float(geom["h1"]))
+            h2 = dual_input("Haunch Height (h2)", "h2", 0.5, 5.0, float(geom["h2"]))
+            h3 = dual_input("Pedestal Height (h3)", "h3", 0.5, 2.0, float(geom["h3"]))
+            h4 = dual_input("Height of Upstand Above FGL (h4)", "h4", 0.0, 2.0, float(geom["h4"]))
+            h5 = dual_input("Downstand Height (h5)", "h5", 0.0, 1.0, float(geom["h5"]))
+            b = dual_input("Downstand Breadth (b)", "b", 0.0, 15.0, float(geom["b"]))
+            hwt = dual_input("Water Table Height (hwt)", "hwt", 0.0, 30.0, float(geom["hwt"]))
+
             submitted = st.form_submit_button("Update Geometry")
 
         if submitted:
-            geom["d1"] = d1
-            geom["d2"] = d2
-            geom["h1"] = h1
-            geom["h2"] = h2
-            geom["h3"] = h3
-            geom["h4"] = h4
-            geom["h5"] = h5
-            geom["b"] = b
-            geom["hwt"] = hwt
+            geom.update({
+                "d1": d1, "d2": d2, "h1": h1, "h2": h2, "h3": h3,
+                "h4": h4, "h5": h5, "b": b, "hwt": hwt
+            })
             st.session_state.selected_geometry = geom
 
-        wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
-        wf.mat_props = st.session_state.mat_props
-        fig1, fig2 = wf.plot_foundation(
-            geom["d1"], geom["d2"], geom["h1"], geom["h2"], geom["h3"],
-            geom["h4"], geom["h5"], geom["b"], geom["hwt"]
-        )
-        st.pyplot(fig1)
-        st.pyplot(fig2)
+            wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
+            wf.mat_props = st.session_state.mat_props
+            fig1, fig2 = wf.plot_foundation(d1, d2, h1, h2, h3, h4, h5, b, hwt)
+            st.pyplot(fig1)
+            st.pyplot(fig2)
+
 
 
 # Page 7: Verification Checks
