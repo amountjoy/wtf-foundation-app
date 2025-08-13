@@ -182,7 +182,7 @@ def page_geometry_optimisation():
             h5 = st.number_input("Downstand Depth (h5)", value=0.15)
 
             st.subheader("Design Constraints")
-            h1_h2_thk_tol = st.number_input("Thickness Tolerance (±)", value=2.0)
+            h1_h2_thk_tol = st.number_input("Thickness Tolerance (±)", value=2.5)
             theta_min_deg = st.number_input("Min Haunch Angle (deg)", value=6.0)
             theta_max_deg = st.number_input("Max Haunch Angle (deg)", value=12.0)
 
