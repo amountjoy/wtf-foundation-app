@@ -258,7 +258,7 @@ class WTF_Concept_Design:
             d2 = 0.1
             warnings.append("Pedestal diameter (d2) adjusted to be non-negative.")
             
-        df_LC = self.read_LCs(filename="Loadcases_env_wout_factor.csv")
+        df_LC = self.read_LCs(filename="Loadcases_env_w_factor.csv")
         df_LC['Fact_BM'] = df_LC['Resolved moment (kNm)'] * df_LC['ULS partial factor']
         
         def predict_min_section_thickness(max_factored_bm):
@@ -286,7 +286,7 @@ class WTF_Concept_Design:
     
         
         # Add dimension annotations
-        def add_dimension(x1, y1, x2, y2, text, v_h, offset_v=4, offset_h=0.3):
+        def add_dimension(x1, y1, x2, y2, text, v_h, offset_v=4, offset_h=1):
             ax1.annotate('', xy=(x1, y1), xytext=(x2, y2),
                         arrowprops=dict(arrowstyle='<->', color='black'))
             if v_h=='h':
@@ -295,9 +295,9 @@ class WTF_Concept_Design:
                 ax1.text((x1 + x2)/2+offset_v, (y1 + y2)/2, text, ha='center', va='bottom', fontsize=9, backgroundcolor='white')
         
         # Horizontal dimensions
-        add_dimension(-d1/2, -h1-h5-0.1, d1/2, -h1-h5-0.1, f'd1 = {d1:.3f} m', v_h='h')
+        add_dimension(-d1/2, -h1-h5-2, d1/2, -h1-h5-2, f'd1 = {d1:.3f} m', v_h='h')
         add_dimension(-d2/2, h1+h2+h3+0.5, d2/2, h1+h2+h3+0.5, f'd2 = {d2:.3f} m', v_h='h')
-        add_dimension(-b/2, -h1-h5-1, b/2, -h1-h5-1, f'b = {b:.3f} m', v_h='h')
+        add_dimension(-b/2, -h1-h5-5, b/2, -h1-h5-5, f'b = {b:.3f} m', v_h='h')
         
         # Vertical dimensions
         add_dimension(d1/2+0.5, 0, d1/2+0.5, h1, f'h1 = {h1:.3f} m', v_h='v')
@@ -317,12 +317,13 @@ class WTF_Concept_Design:
         ax1.axhline(y=h1+h2+h3-h4, color='brown', linestyle='--', label='FGL')
     
         for i, warning in enumerate(warnings):
-            ax1.text(0, h1 + h2 + h3 + h4 + 1.5 + i * 0.5, f"⚠ {warning}", color='red', ha='center', fontsize=9)
+            ax1.text(0, h1 + h2 + h3 + h4 + 10 + i * 1.5, f"⚠ {warning}", color='red', ha='center', fontsize=9)
     
         ax1.set_xlim(-d1, d1)
         ax1.set_ylim(- h5 - 4, h1 + h2 + h3 + h4 + 4)
         #ax1.set_aspect('equal')
         ax1.legend(loc='upper right')
+        ax1.set_aspect('equal', adjustable='datalim')
     
         # 3D View
         ax2 = fig.add_subplot(2, 1, 2, projection='3d')
@@ -347,6 +348,14 @@ class WTF_Concept_Design:
         X2 = (d2/2) * np.cos(U2)
         Y2 = (d2/2) * np.sin(U2)
         ax2.plot_surface(X2, Y2, Z2, color='darkgray', alpha=0.9)
+        
+        # Add lid to the pedestal
+        u_lid = np.linspace(0, 2 * np.pi, 30)
+        r_lid = d2 / 2
+        x_lid = r_lid * np.cos(u_lid)
+        y_lid = r_lid * np.sin(u_lid)
+        z_lid = np.full_like(u_lid, h1 + h2 + h3)
+        ax2.plot_trisurf(x_lid, y_lid, z_lid, color='darkgray', alpha=0.9)
     
         
         # Downstand (rectangular prism)
@@ -375,7 +384,9 @@ class WTF_Concept_Design:
         ax2.set_ylim(-d1/2, d1/2)
         ax2.set_zlim(-h1 - h5, h1 + h2 + h3 + h4)
         #ax2.set_box_aspect([1, 1, 1])
-        
+        ax2.set_box_aspect([d1, d1, h1 + h2 + h3 + h4])
+
+
         
         # Set equal aspect ratio
         #max_range = max(d1, d1, h1 + h2 + h3 + h4 + h5)
@@ -855,7 +866,8 @@ class WTF_Concept_Design:
         else:
             return None, pd.DataFrame()
         
-    def optimise_foundation_geometry_parallel(self, LCs_wout_pf, LCs_w_pf,
+    def optimise_foundation_geometry_parallel(self, No_Gap_LCs_wout_pf, No_Gap_LCs_w_pf,
+                                              Ext_wout_pf, Ext_w_pf,
                                               d1_min=20, d1_max=40, d_1_steps=20,
                                               h1_min=0.1, h1_max=2.5, h_1_steps=20,
                                               h2_min=0.1, h2_max=2.5, h_2_steps=20,
@@ -890,7 +902,7 @@ class WTF_Concept_Design:
             intercept = 596.79
             return slope * max_factored_bm + intercept
     
-        df_LC = LCs_wout_pf.copy()
+        df_LC = Ext_w_pf.copy()
         df_LC['Fact_BM'] = df_LC['Resolved moment (kNm)'] * df_LC['ULS partial factor']
         thk_min = predict_min_section_thickness(df_LC['Fact_BM'].max()) / 1000
     
@@ -923,37 +935,40 @@ class WTF_Concept_Design:
                                   'V_c': V_c, 'V_bs': V_bs, 'V_h': V_h, 'V_p': V_p, 'V_d': V_d, 'V_h_f': V_h_f,
                                   'V_p_f': V_p_f, 'V_w': V_w})
     
-            self.M_top_bottom(df=LCs_wout_pf, h1=h1, h2=h2, h3=h3, h4=h4)
-            self.M_top_bottom(df=LCs_w_pf, h1=h1, h2=h2, h3=h3, h4=h4)
+            self.M_top_bottom(df=No_Gap_LCs_wout_pf, h1=h1, h2=h2, h3=h3, h4=h4)
+            self.M_top_bottom(df=No_Gap_LCs_w_pf, h1=h1, h2=h2, h3=h3, h4=h4)
+            
+            self.M_top_bottom(df=Ext_wout_pf, h1=h1, h2=h2, h3=h3, h4=h4)
+            self.M_top_bottom(df=Ext_w_pf, h1=h1, h2=h2, h3=h3, h4=h4)
     
             Conc_DL = self.foundation_perm_load(volume=V_c, density=g_concrete)
             Ballast_Sub = self.foundation_perm_load(volume=V_h_f + V_p_f, density=g_ballast)
             Hydrostatic_Uplift = self.foundation_perm_load(volume=V_w, density=g_water)
     
             try:
-                no_gap = self.no_gapping(d1, LCs_wout_pf['M_Res Bottom of Slab (kNm)'],
-                                       LCs_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=4)
+                no_gap = self.no_gapping(d1, No_Gap_LCs_wout_pf['M_Res Bottom of Slab (kNm)'],
+                                       No_Gap_LCs_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=4)
                 if not all(no_gap['Result'] == 'Pass'):
                     return None
     
-                ground_contact = self.no_gapping(d1, LCs_wout_pf['M_Res Bottom of Slab (kNm)'],
-                                               LCs_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=1/0.59)
+                ground_contact = self.no_gapping(d1, Ext_wout_pf['M_Res Bottom of Slab (kNm)'],
+                                               Ext_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=1/0.59)
                 if not all(ground_contact['Result'] == 'Pass'):
                     return None
     
-                sbp = self.soil_bearing_pressure(d1, LCs_wout_pf['M_Res Bottom of Slab (kNm)'],
-                                               LCs_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, Theta_allow=250)
+                sbp = self.soil_bearing_pressure(d1, Ext_wout_pf['M_Res Bottom of Slab (kNm)'],
+                                               Ext_wout_pf['Axial (kN)'], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, Theta_allow=250)
                 if not (all(sbp['Result_max'] == 'Pass') and all(sbp['Result_mean'] == 'Pass')):
                     return None
     
-                overturning = self.overturning(d1, LCs_w_pf['Axial (kN)'], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift,
-                                             LCs_w_pf['M_Res Bottom of Slab (kNm)'], LCs_w_pf['ULS partial factor'], 0.9, 1.10)
+                overturning = self.overturning(d1, Ext_w_pf['Axial (kN)'], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift,
+                                             Ext_w_pf['M_Res Bottom of Slab (kNm)'], Ext_w_pf['ULS partial factor'], 0.9, 1.10)
                 if not all(overturning['Result'] == 'Pass'):
                     return None
     
-                sliding = self.sliding(d1, phi, LCs_w_pf['Axial (kN)'], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift,
-                                     LCs_w_pf['Resolved shear (kN)'], LCs_w_pf['Torsional moment (kNm)'],
-                                     LCs_w_pf['M_Res Bottom of Slab (kNm)'], LCs_w_pf['ULS partial factor'], 0.9, 1.10, 1.25)
+                sliding = self.sliding(d1, phi, Ext_w_pf['Axial (kN)'], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift,
+                                     Ext_w_pf['Resolved shear (kN)'], Ext_w_pf['Torsional moment (kNm)'],
+                                     Ext_w_pf['M_Res Bottom of Slab (kNm)'], Ext_w_pf['ULS partial factor'], 0.9, 1.10, 1.25)
                 if not all(sliding['Result'] == 'Pass'):
                     return None
     

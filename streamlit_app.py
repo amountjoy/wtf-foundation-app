@@ -17,13 +17,15 @@ st.set_page_config(
 
 
 @st.cache_data
-def run_optimisation_cached(mat_props, nominal_df, factored_df, **kwargs):
+def run_optimisation_cached(mat_props, nominal_df, factored_df, Ext_wout_pf, Ext_w_pf **kwargs):
     st.write("⏱️ Optimisation run at:", datetime.datetime.now())  # Optional debug
     wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
     wf.mat_props = mat_props
     return wf.optimise_foundation_geometry_parallel(
-        LCs_wout_pf=nominal_df,
-        LCs_w_pf=factored_df,
+        No_Gap_LCs_wout_pf=nominal_df,
+        No_Gap_LCs_w_pf=factored_df,
+        Ext_wout_pf = Ext_wout_pf,
+        Ext_w_pf = Ext_w_pf,
         **kwargs
     )
 
@@ -34,7 +36,7 @@ spec = importlib.util.spec_from_file_location("WTF_Concept", "WTF_Concept.py")
 WTF_Concept = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(WTF_Concept)
 
-# Initialize session state
+# Initialise session state
 if 'mat_props' not in st.session_state:
     st.session_state.mat_props = {}
 if 'load_data' not in st.session_state:
@@ -85,34 +87,44 @@ def page_material_properties():
 # Page 2: Load Case Upload
 def page_load_upload():
     st.title("Load Case Upload")
-    st.write("Upload two CSV files: one without partial factors and one with partial factors.")
+    st.write("Upload loading CSV files, including no gapping governing case and extreme loads")
 
+    load_file_ext_wout = st.file_uploader("Extreme unfactored loading CSV", type="csv", key="ext_wout")
+    load_file_ext_w = st.file_uploader("Extreme factored loading CSV", type="csv", key="ext_w")
     load_file_nominal = st.file_uploader("Nominal unfactored loading CSV", type="csv", key="nominal")
     load_file_factored = st.file_uploader("Factored loading CSV", type="csv", key="factored")
     climate_multiplier = st.number_input("Climate Change Wind Speed Multiplier", value=1.05)
 
-    if load_file_nominal and load_file_factored:
+    if load_file_ext_wout and load_file_ext_w and load_file_nominal and load_file_factored:
         wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
 
 
         # Save uploaded files temporarily
+        with open("ext_wout.csv", "wb") as f:
+            f.write(load_file_ext_wout.getbuffer())
+        with open("ext_w.csv", "wb") as f:
+            f.write(load_file_ext_w.getbuffer())
         with open("nominal.csv", "wb") as f:
             f.write(load_file_nominal.getbuffer())
         with open("factored.csv", "wb") as f:
             f.write(load_file_factored.getbuffer())
 
         # Read and map columns using read_LCs
+        df_ext_wout = wf.read_LCs(filename="ext_wout.csv", map_file="column_map.csv")
+        df_ext_w = wf.read_LCs(filename="ext_w.csv", map_file="column_map.csv")
         df_nominal = wf.read_LCs(filename="nominal.csv", map_file="column_map.csv")
         df_factored = wf.read_LCs(filename="factored.csv", map_file="column_map.csv")
 
         # Apply climate multiplier only to specific columns
-        for df in [df_nominal, df_factored]:
+        for df in [df_ext_wout, df_ext_w, df_nominal, df_factored]:
             for col in ["Resolved shear (kN)", "Torsional moment (kNm)", "Resolved moment (kNm)"]:
                 if col in df.columns:
                     df[col] = df[col] * climate_multiplier**2
 
 
         st.session_state.load_data = {
+            "ext_wout": df_ext_wout,
+            "ext_w": df_ext_w,
             "nominal": df_nominal,
             "factored": df_factored
         }
@@ -120,10 +132,16 @@ def page_load_upload():
         st.success("Load cases uploaded and climate multiplier applied.")
 
         # Display the DataFrames
-        st.subheader("Nominal Load Case Data")
+        st.subheader("Extreme Unfactored Loads")
+        st.dataframe(df_ext_wout)
+        
+        st.subheader("Extreme Factored Loads")
+        st.dataframe(df_ext_w)
+        
+        st.subheader("No Gapping Case Unfactored Loads")
         st.dataframe(df_nominal)
 
-        st.subheader("Factored Load Case Data")
+        st.subheader("No Gapping Case Factored Loads")
         st.dataframe(df_factored)
 
 
@@ -176,6 +194,8 @@ def page_geometry_optimisation():
                     mat_props=st.session_state.mat_props,
                     nominal_df=st.session_state.load_data["nominal"],
                     factored_df=st.session_state.load_data["factored"],
+                    Ext_wout_pf=st.session_state.load_data["ext_wout"],
+                    Ext_w_pf=st.session_state.load_data["ext_w"],
                     d1_min=d1_min, d1_max=d1_max, d_1_steps=d_1_steps,
                     h1_min=h1_min, h1_max=h1_max, h_1_steps=h_1_steps,
                     h2_min=h2_min, h2_max=h2_max, h_2_steps=h_2_steps,
@@ -282,6 +302,8 @@ def page_verification_checks():
     st.title("Verification Checks")
     if st.session_state.selected_geometry is not None and st.session_state.load_data is not None:
         geom = st.session_state.selected_geometry
+        loads_ext_wout = st.session_state.load_data["ext_wout"]
+        loads_ext_w = st.session_state.load_data["ext_w"]
         loads_unf = st.session_state.load_data["nominal"]
         loads_fact = st.session_state.load_data["factored"]
         props = st.session_state.mat_props
@@ -316,15 +338,17 @@ def page_verification_checks():
         Hydrostatic_Uplift = wf.foundation_perm_load(V_w, props["g_water"])
 
         # Calculate moments
+        wf.M_top_bottom(loads_ext_wout, h1, h2, h3, h4)
+        wf.M_top_bottom(loads_ext_w, h1, h2, h3, h4)
         wf.M_top_bottom(loads_unf, h1, h2, h3, h4)
         wf.M_top_bottom(loads_fact, h1, h2, h3, h4)
 
         # Perform checks
         no_gap_df = wf.no_gapping(d1, loads_unf["M_Res Bottom of Slab (kNm)"], loads_unf["Axial (kN)"], Conc_DL + Ballast_Sub + Hydrostatic_Uplift)
-        ground_contact_df = wf.no_gapping(d1, loads_unf["M_Res Bottom of Slab (kNm)"], loads_unf["Axial (kN)"], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=1/0.59)
-        sbp_df = wf.soil_bearing_pressure(d1, loads_unf["M_Res Bottom of Slab (kNm)"], loads_unf["Axial (kN)"], Conc_DL + Ballast_Sub + Hydrostatic_Uplift)
-        overturning_df = wf.overturning(d1, loads_fact["Axial (kN)"], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift, loads_fact["M_Res Bottom of Slab (kNm)"], loads_fact["ULS partial factor"])
-        sliding_df = wf.sliding(d1, props["phi_prime"], loads_fact["Axial (kN)"], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift, loads_fact["Resolved shear (kN)"], loads_fact["Torsional moment (kNm)"], loads_fact["M_Res Bottom of Slab (kNm)"], loads_fact["ULS partial factor"])
+        ground_contact_df = wf.no_gapping(d1, loads_ext_wout["M_Res Bottom of Slab (kNm)"], loads_ext_wout["Axial (kN)"], Conc_DL + Ballast_Sub + Hydrostatic_Uplift, R_ratio=1/0.59)
+        sbp_df = wf.soil_bearing_pressure(d1, loads_ext_wout["M_Res Bottom of Slab (kNm)"], loads_ext_wout["Axial (kN)"], Conc_DL + Ballast_Sub + Hydrostatic_Uplift)
+        overturning_df = wf.overturning(d1, loads_ext_w["Axial (kN)"], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift, loads_ext_w["M_Res Bottom of Slab (kNm)"], loads_ext_w["ULS partial factor"])
+        sliding_df = wf.sliding(d1, props["phi_prime"], loads_ext_w["Axial (kN)"], Conc_DL, 0, Ballast_Sub, Hydrostatic_Uplift, loads_ext_w["Resolved shear (kN)"], loads_ext_w["Torsional moment (kNm)"], loads_ext_w["M_Res Bottom of Slab (kNm)"], loads_ext_w["ULS partial factor"])
 
         # Display results
         st.subheader("No Gapping Check")
