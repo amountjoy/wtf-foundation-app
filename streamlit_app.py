@@ -159,19 +159,19 @@ def page_geometry_optimisation():
     if st.session_state.get("load_data") and st.session_state.get("mat_props"):
         with st.form("optimisation_form"):
             st.subheader("Geometry Ranges")
-            d1_min = st.number_input("Base Diameter Min (d1_min)", value=30.0)
+            d1_min = st.number_input("Base Diameter Min (d1_min)", value=15.0)
             d1_max = st.number_input("Base Diameter Max (d1_max)", value=35.0)
             d_1_steps = st.number_input("Steps for d1", value=10, step=1)
 
-            h1_min = st.number_input("Base Thickness Min (h1_min)", value=1)
+            h1_min = st.number_input("Base Thickness Min (h1_min)", value=0.5)
             h1_max = st.number_input("Base Thickness Max (h1_max)", value=1.5)
             h_1_steps = st.number_input("Steps for h1", value=10, step=1)
 
-            h2_min = st.number_input("Haunch Height Min (h2_min)", value=2.5)
+            h2_min = st.number_input("Haunch Height Min (h2_min)", value=0.5)
             h2_max = st.number_input("Haunch Height Max (h2_max)", value=3)
             h_2_steps = st.number_input("Steps for h2", value=10, step=1)
 
-            h3_min = st.number_input("Pedestal Height Min (h3_min)", value=0.5)
+            h3_min = st.number_input("Pedestal Height Min (h3_min)", value=0.1)
             h3_max = st.number_input("Pedestal Height Max (h3_max)", value=1.0)
             h_3_steps = st.number_input("Steps for h3", value=10, step=1)
 
