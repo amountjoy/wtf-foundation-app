@@ -17,7 +17,7 @@ st.set_page_config(
 
 
 @st.cache_data
-def run_optimisation_cached(mat_props, nominal_df, factored_df, Ext_wout_pf, Ext_w_pf **kwargs):
+def run_optimisation_cached(mat_props, nominal_df, factored_df, Ext_wout_pf, Ext_w_pf, **kwargs):
     st.write("⏱️ Optimisation run at:", datetime.datetime.now())  # Optional debug
     wf = WTF_Concept.WTF_Concept_Design(submerged=st.session_state.get("submerged", True))
     wf.mat_props = mat_props
